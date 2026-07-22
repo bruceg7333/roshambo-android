@@ -1,0 +1,15 @@
+.gradle/
+.kotlin/
+build/
+app/build/
+local.properties
+captures/
+.cxx/
+*.iml
+.DS_Store
+
+# Local Firebase configuration
+app/google-services.json
+
+# Downloaded MediaPipe model; see README.md
+app/src/main/assets/hand_landmarker.task
