@@ -52,10 +52,15 @@ import co.realmate.roshambo.challenge.ChallengeStore
 import co.realmate.roshambo.challenge.ChallengeStore.Phase
 
 @Composable
-fun ChallengeScreen(vm: RoshamboViewModel, challengeId: String?, onDismiss: () -> Unit) {
+fun ChallengeScreen(
+    vm: RoshamboViewModel,
+    challengeId: String?,
+    initialMove: Gesture? = null,
+    onDismiss: () -> Unit
+) {
     val context = LocalContext.current
     val haptics = LocalHapticFeedback.current
-    val store = remember(challengeId) { ChallengeStore(challengeId) }
+    val store = remember(challengeId, initialMove) { ChallengeStore(challengeId, initialMove) }
     var showingHistory by remember { mutableStateOf(false) }
 
     LaunchedEffect(store) { store.start() }

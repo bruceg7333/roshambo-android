@@ -55,7 +55,12 @@ data class AsyncChallenge(
  * Drives a single async challenge, mirroring the iOS `ChallengeStore`. Owns its own
  * coroutine scope; call [dispose] when the hosting screen leaves composition.
  */
-class ChallengeStore(private var challengeID: String?) {
+class ChallengeStore(
+    private var challengeID: String?,
+    private val initialMove: Gesture? = null
+) {
+
+    private val hasInitialMove = initialMove != null && initialMove != Gesture.NONE
 
     sealed interface Phase {
         data object Loading : Phase
@@ -69,7 +74,9 @@ class ChallengeStore(private var challengeID: String?) {
         data object Unavailable : Phase
     }
 
-    var phase by mutableStateOf<Phase>(if (challengeID == null) Phase.Ready else Phase.Loading)
+    var phase by mutableStateOf<Phase>(
+        if (challengeID == null && !hasInitialMove) Phase.Ready else Phase.Loading
+    )
         private set
     var challenge by mutableStateOf<AsyncChallenge?>(null)
         private set
@@ -95,6 +102,12 @@ class ChallengeStore(private var challengeID: String?) {
             if (Firebase.auth.currentUser == null) {
                 errorMessage = "Could not connect. Check your network and try again."
                 phase = Phase.Unavailable
+                return@launch
+            }
+            // Challenge-from-your-last-throw: create straight away with the passed move.
+            if (challengeID == null && hasInitialMove) {
+                capturedMove = initialMove!!
+                submit()
                 return@launch
             }
             val id = challengeID

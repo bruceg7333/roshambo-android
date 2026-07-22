@@ -63,6 +63,7 @@ fun GameScreen(
     val context = LocalContext.current
     var showProfile by remember { mutableStateOf(false) }
     var showChallenge by remember { mutableStateOf(false) }
+    var challengeMove by remember { mutableStateOf<Gesture?>(null) }
     var useBack by remember {
         mutableStateOf(context.prefs().getBoolean("useBackCamera", false))
     }
@@ -118,7 +119,13 @@ fun GameScreen(
                 modifier = Modifier.padding(bottom = 14.dp))
 
             PlayButton(vm)
-            ChallengeButton { showChallenge = true }
+            // Offer a challenge only once you've thrown a move to challenge with.
+            if (vm.phase == RoshamboViewModel.Phase.RESULT && vm.playerThrow != Gesture.NONE) {
+                ChallengeButton {
+                    challengeMove = vm.playerThrow
+                    showChallenge = true
+                }
+            }
         }
 
         if (showProfile) {
@@ -126,8 +133,13 @@ fun GameScreen(
         }
 
         if (showChallenge) {
-            ChallengeScreen(vm, challengeId) {
+            ChallengeScreen(
+                vm = vm,
+                challengeId = challengeId,
+                initialMove = if (challengeId == null) challengeMove else null
+            ) {
                 showChallenge = false
+                challengeMove = null
                 onChallengeConsumed()
             }
         }
