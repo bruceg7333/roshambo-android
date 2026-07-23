@@ -47,6 +47,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import co.realmate.roshambo.Gesture
 import co.realmate.roshambo.RoshamboViewModel
+import co.realmate.roshambo.SoundEffects
+import co.realmate.roshambo.SoundEffects.Cue
 import co.realmate.roshambo.challenge.AsyncChallenge
 import co.realmate.roshambo.challenge.ChallengeStore
 import co.realmate.roshambo.challenge.ChallengeStore.Phase
@@ -69,8 +71,26 @@ fun ChallengeScreen(
     val phase = store.phase
     // Light taps on each countdown beat, matching the iOS haptics.
     LaunchedEffect(phase) {
-        if (phase is Phase.Countdown) haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-        if (phase is Phase.Result) haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+        when (phase) {
+            is Phase.Countdown -> {
+                SoundEffects.play(context, when (phase.value) {
+                    3 -> Cue.COUNTDOWN_3
+                    2 -> Cue.COUNTDOWN_2
+                    else -> Cue.COUNTDOWN_1
+                })
+                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            }
+            is Phase.Confirm -> SoundEffects.play(context, Cue.SHOOT)
+            is Phase.Result -> {
+                SoundEffects.play(context, when (store.challenge?.outcome) {
+                    "win" -> Cue.WIN
+                    "loss" -> Cue.LOSE
+                    else -> Cue.DRAW
+                })
+                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+            }
+            else -> {}
+        }
     }
 
     val usesCamera = phase is Phase.Ready || phase is Phase.Countdown || phase is Phase.Confirm
@@ -267,9 +287,13 @@ private fun Actions(store: ChallengeStore, vm: RoshamboViewModel, context: Conte
 
 @Composable
 private fun PrimaryButton(title: String, onClick: () -> Unit) {
+    val context = LocalContext.current
     Box(
         Modifier.fillMaxWidth().height(62.dp).clip(RoundedCornerShape(18.dp))
-            .background(Palette.fire).clickable { onClick() },
+            .background(Palette.fire).clickable {
+                SoundEffects.play(context, Cue.TICK)
+                onClick()
+            },
         contentAlignment = Alignment.Center
     ) {
         Text(title, color = Color.White, fontWeight = FontWeight.Black, fontSize = 18.sp, letterSpacing = 2.sp)

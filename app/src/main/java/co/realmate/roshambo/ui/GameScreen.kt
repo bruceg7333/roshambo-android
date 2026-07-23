@@ -49,6 +49,8 @@ import androidx.compose.ui.unit.sp
 import co.realmate.roshambo.Gesture
 import co.realmate.roshambo.RoundOutcome
 import co.realmate.roshambo.RoshamboViewModel
+import co.realmate.roshambo.SoundEffects
+import co.realmate.roshambo.SoundEffects.Cue
 import co.realmate.roshambo.solana.WalletViewModel
 import com.solana.mobilewalletadapter.clientlib.ActivityResultSender
 
@@ -67,9 +69,40 @@ fun GameScreen(
     var useBack by remember {
         mutableStateOf(context.prefs().getBoolean("useBackCamera", false))
     }
+    var previousGesture by remember { mutableStateOf(vm.gesture) }
 
     // An incoming challenge link opens the challenge flow straight away.
     LaunchedEffect(challengeId) { if (challengeId != null) showChallenge = true }
+    LaunchedEffect(vm.phase, vm.countdownValue) {
+        when (vm.phase) {
+            RoshamboViewModel.Phase.COUNTDOWN -> SoundEffects.play(
+                context,
+                when (vm.countdownValue) {
+                    3 -> Cue.COUNTDOWN_3
+                    2 -> Cue.COUNTDOWN_2
+                    else -> Cue.COUNTDOWN_1
+                }
+            )
+            RoshamboViewModel.Phase.SHOOT -> SoundEffects.play(context, Cue.SHOOT)
+            RoshamboViewModel.Phase.RESULT -> SoundEffects.play(
+                context,
+                when (vm.outcome) {
+                    RoundOutcome.WIN -> Cue.WIN
+                    RoundOutcome.LOSS -> Cue.LOSE
+                    else -> Cue.DRAW
+                }
+            )
+            else -> {}
+        }
+    }
+    LaunchedEffect(vm.gesture) {
+        if (vm.phase == RoshamboViewModel.Phase.IDLE &&
+            previousGesture == Gesture.NONE && vm.gesture != Gesture.NONE
+        ) {
+            SoundEffects.play(context, Cue.DETECTED)
+        }
+        previousGesture = vm.gesture
+    }
 
     Box(Modifier.fillMaxSize().background(Color.Black)) {
         CameraView(vm, useBack, Modifier.fillMaxSize())
@@ -87,7 +120,10 @@ fun GameScreen(
                 .padding(horizontal = 20.dp, vertical = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            topHUD(vm) { showProfile = true }
+            topHUD(vm) {
+                SoundEffects.play(context, Cue.TICK)
+                showProfile = true
+            }
 
             Box(Modifier.fillMaxWidth().padding(vertical = 9.dp), contentAlignment = Alignment.Center) {
                 Text("AI READY", color = Palette.lose.copy(0.85f),
@@ -99,6 +135,7 @@ fun GameScreen(
                             .clip(CircleShape)
                             .background(Color.Black.copy(0.55f))
                             .clickable(enabled = !vm.isBusy) {
+                                SoundEffects.play(context, Cue.TICK)
                                 useBack = !useBack
                                 context.prefs().edit().putBoolean("useBackCamera", useBack).apply()
                             }
@@ -122,6 +159,7 @@ fun GameScreen(
             // Offer a challenge only once you've thrown a move to challenge with.
             if (vm.phase == RoshamboViewModel.Phase.RESULT && vm.playerThrow != Gesture.NONE) {
                 ChallengeButton {
+                    SoundEffects.play(context, Cue.TICK)
                     challengeMove = vm.playerThrow
                     showChallenge = true
                 }
@@ -362,13 +400,17 @@ private fun ScanCorners(color: Color, modifier: Modifier) {
 
 @Composable
 private fun PlayButton(vm: RoshamboViewModel) {
+    val context = LocalContext.current
     val shape = RoundedCornerShape(22.dp)
     val enabled = !vm.isBusy
     val label = if (vm.phase == RoshamboViewModel.Phase.RESULT) "PLAY AGAIN" else "START ROUND"
     Box(
         Modifier.fillMaxWidth().height(74.dp).clip(shape)
             .background(if (enabled) Palette.fire else Brush.verticalGradient(listOf(Color.Gray, Color.DarkGray)))
-            .clickable(enabled = enabled) { vm.playRound() },
+            .clickable(enabled = enabled) {
+                SoundEffects.play(context, Cue.START)
+                vm.playRound()
+            },
         contentAlignment = Alignment.Center
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {

@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
+import androidx.compose.material3.Switch
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -39,6 +40,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import co.realmate.roshambo.RoshamboViewModel
+import co.realmate.roshambo.SoundEffects
+import co.realmate.roshambo.SoundEffects.Cue
 import co.realmate.roshambo.solana.WalletViewModel
 import com.solana.mobilewalletadapter.clientlib.ActivityResultSender
 
@@ -72,10 +75,33 @@ fun ProfileScreen(
             }
 
             profileCard(game)
+            soundCard(context)
             walletCard(wallet, game, sender, context, uriHandler)
 
             Spacer(Modifier.size(4.dp))
         }
+    }
+}
+
+@Composable
+private fun soundCard(context: Context) {
+    var enabled by remember { mutableStateOf(SoundEffects.isEnabled(context)) }
+    Row(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
+            .background(Color.White.copy(0.06f)).padding(18.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text("SOUND EFFECTS", color = Color.White, fontWeight = FontWeight.Black,
+            fontSize = 13.sp, letterSpacing = 1.5.sp)
+        Spacer(Modifier.weight(1f))
+        Switch(
+            checked = enabled,
+            onCheckedChange = {
+                enabled = it
+                SoundEffects.setEnabled(context, it)
+                if (it) SoundEffects.play(context, Cue.TICK)
+            }
+        )
     }
 }
 

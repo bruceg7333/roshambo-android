@@ -44,6 +44,7 @@ class MainActivity : ComponentActivity() {
         // Must be created during onCreate (registers an activity-result launcher).
         sender = ActivityResultSender(this)
         challengeId = challengeIdFrom(intent)
+        SoundEffects.initialize(applicationContext)
         enableEdgeToEdge()
         setContent { App(sender, challengeId) { challengeId = null } }
     }
